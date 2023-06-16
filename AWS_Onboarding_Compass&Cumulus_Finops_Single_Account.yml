@@ -9,11 +9,6 @@ Parameters:
     AllowedPattern: '[\w+=,.@-]{1,64}'
     MinLength: '1'
     MaxLength: '64'
-  ExternalId:
-    Type: String
-    Description: The external ID can be any word or number e.g (cloudelligent-sandbox)
-    MinLength: '1'
-    MaxLength: '64'
   EnforceMFA:
     Description: Flag to enforce MFA (Multi-Factor Authentication) when Assuming the role.
     Type: String
@@ -52,12 +47,11 @@ Resources:
             Condition: !If 
               - IncludeMFACondition
               - StringEquals:
-                  'sts:ExternalId': !Ref ExternalId
+                  'sts:ExternalId': "9ba55e7ffef3c1611a511bbbdadbcdbff662b8d9"
                 Bool:
                   'aws:MultiFactorAuthPresent': 'true'
               - StringEquals:
                   'sts:ExternalId': 
-                      - !Ref ExternalId
                       - "9ba55e7ffef3c1611a511bbbdadbcdbff662b8d9"
             Action:
               - 'sts:AssumeRole'
@@ -243,9 +237,6 @@ Outputs:
     Value: !GetAtt 
       - Role
       - Arn
-  ExternalId:
-    Description: ExternalId used in Role trusted policy.
-    Value: !Ref ExternalId
   MFAEnabled:
     Description: Flag to identify MFA enforced for the role or not.
     Value: !Ref EnforceMFA
