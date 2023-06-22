@@ -3,16 +3,16 @@ Introduction:
 
     Onboarding AWS Single Account:
         
-   * Login to the AWS account.
-   * Navigate to CloudFormation.
-   * Click Create Stack with new resources. 
-   * Select Template is ready option in the Prepare template field.
-   * Select Upload a Template file.
-   * Select the Single account onboarding Cloudformation Template file.Click Next
-   * Provide values for the Stack name and you can view additional fields that can be left with default values. Click Next
-   * You can leave the values for the fields in this screen as default or make changes as necessary including assigning Tags, providing notification options, etc.Click Next.
-   * The information provided in all the steps will be displayed. After reviewing the provided information for correctness, scroll down to the end of the screen and click on the _acknowledge _checkbox.
-   * Click Create Stack.
+        * Login to the AWS account.
+        * Navigate to CloudFormation.
+        * Click Create Stack with new resources. 
+        * Select Template is ready option in the Prepare template field.
+        * Select Upload a Template file.
+        * Select the Single account onboarding Cloudformation Template file.Click Next
+        * Provide values for the Stack name and you can view additional fields that can be left with default values. Click Next
+        * You can leave the values for the fields in this screen as default or make changes as necessary including assigning Tags, providing notification options, etc.Click Next.
+        * The information provided in all the steps will be displayed. After reviewing the provided information for correctness, scroll down to the end of the screen and click on the _acknowledge _checkbox.
+        * Click Create Stack.
 
 The stack creation process will be initiated, and the status can be viewed.
 
