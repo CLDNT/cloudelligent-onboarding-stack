@@ -3,14 +3,7 @@ Description: >-
   Creates a new IAM role for your AWS Master account with ReadOnlyAccess
   permissions needed for Finops Bundle
 Parameters:
-  RoleName:
-    Type: String
-    Description: >-
-      The name of the IAM role to create. Use alphanumeric and '+=,.@-_'
-      characters.
-    AllowedPattern: '[\w+=,.@-]{1,64}'
-    MinLength: '1'
-    MaxLength: '64'
+
   AWSCostAndUsageReportCURBucketName:
     Type: String
     Description: >-
@@ -51,7 +44,7 @@ Resources:
   Role:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: !Ref RoleName
+      RoleName: "cloudelligent-assessment-role"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -348,3 +341,9 @@ Outputs:
   MFAEnabled:
     Description: Flag to identify MFA enforced for the role or not.
     Value: !Ref EnforceMFA
+  RoleName:
+    Description: Name of the IAM Role.
+    Value: !Ref Role
+  ExternalId:
+    Description: External id for building trust.
+    Value: "9ba55e7ffef3c1611a511bbbdadbcdbff662b8d9"
