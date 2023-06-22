@@ -21,7 +21,7 @@ The stack creation process will be initiated, and the status can be viewed.
     Navigate to _Outputs _tab to view the access credentials (ARN).
 
 Onboarding AWS Multiple Accounts:
-            For AWS Bulk accounts onboarding, ther are few requirements must be verified
+            For AWS Bulk accounts onboarding, ther are few requirements must be verified<br/>
                 a. CUR Buckets must be created under Billing Dashboard --> Cost & usage Reports.<br/>
                 b. Cloudformation StackSet service must be enabled in AWS Organization ---> Services
     
