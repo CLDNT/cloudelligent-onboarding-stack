@@ -16,7 +16,7 @@ Parameters:
     MaxLength: '64'
   IAMPermissionInclude:
     Type: String
-    Description: Permission to include IAM Write Access
+    Description: Permission to include IAM ReadOnly Access
     Default: Allow
     AllowedValues:
       - Allow
@@ -24,7 +24,7 @@ Parameters:
 
   AssessmentPermissionInclude:
     Type: String
-    Description: Permission to include Wellarchitected Read & Write Access
+    Description: Permission to include Wellarchitected ReadOnly Access
     Default: Allow
     AllowedValues:
       - Allow
@@ -33,7 +33,7 @@ Parameters:
   
   CompassPermissionInclude:
     Type: String
-    Description: Permission to include Wellarchitected Read & Write Access
+    Description: Permission to include Wellarchitected ReadOnly Access
     Default: Allow
     AllowedValues:
       - Allow
@@ -252,7 +252,7 @@ Resources:
     Type: AWS::IAM::Policy
     Condition: AssessmentAllow
     Properties:
-      PolicyName: CoreStack_AssessmentWritePermission
+      PolicyName: CoreStack_AssessmentWarPermission
       PolicyDocument:
         Statement:
           - Sid: Auth
