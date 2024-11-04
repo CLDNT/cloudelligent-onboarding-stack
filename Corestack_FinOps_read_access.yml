@@ -41,28 +41,6 @@ Parameters:
     AllowedValues:
       - 'true'
       - 'false'
-  ExternalIdRI:
-    Type: String
-    Default: "9ba55e7ffef3c1611a511bbbdadbcdbff662b8d9"
-    Description: "External ID for ReservedAI role"
-
-  BucketRegion: # Adding this parameter
-    Type: String
-    Description: The region where the S3 bucket is located.
-    Default: us-east-1
-    AllowedValues:
-      - us-east-1
-      - us-west-1
-      - us-west-2
-      # Add more regions as needed
-
-  GovernanceS3Bucket: # Adding this parameter
-    Type: String
-    Description: The name of the S3 bucket used for governance purposes.
-    MinLength: 3 
-    MaxLength: 63
-    AllowedPattern: '^[a-z0-9\.\-\_]*$'
-    ConstraintDescription: Must be a valid S3 bucket name.
 
 Conditions:
   IncludeMFACondition: !Equals 
@@ -474,7 +452,7 @@ Resources:
             Action: sts:AssumeRole
             Condition:
               StringEquals:
-                sts:ExternalId: !Ref ExternalIdRI
+                sts:ExternalId: "8ab6faee-ffc1-4302-93a3-98daf7178208"
       Policies:
         - PolicyName: ReservedAI-Write
           PolicyDocument:
@@ -575,14 +553,12 @@ Resources:
                   - 'es:PurchaseReservedElasticsearchInstanceOffering'
                   - 'savingsplans:CreateSavingsPlan'
                   - 'savingsplans:DeleteQueuedSavingsPlan'
-
                 Resource:
                   - '*'
               - Effect: Allow
                 Action: iam:CreateServiceLinkedRole
                 Resource: 
                   - arn:aws:iam::*:role/aws-service-role/*
-
               - Effect: Allow
                 Action:
                   - iam:GetRolePolicy
@@ -611,7 +587,8 @@ Resources:
                 Action:
                   - cur:PutReportDefinition
                 Resource:
-                  - arn:aws:cur:*:*:definition/reserved-ai-*        
+                  - arn:aws:cur:*:*:definition/reserved-ai-*
+
 Outputs:
   RoleARN:
     Description: ARN of the IAM Role.
@@ -627,3 +604,4 @@ Outputs:
   ExternalId:
     Description: External id for building trust.
     Value: "9ba55e7ffef3c1611a511bbbdadbcdbff662b8d9"
+  
