@@ -1,0 +1,629 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Creates a new IAM role for your AWS Master account with ReadOnlyAccess
+  permissions needed for Finops Bundle
+Parameters:
+  AWSCostAndUsageReportCURBucketName:
+    Type: String
+    Description: 'The name of the Cost and Usage Report (CUR) S3 bucket name to get Cost details. NOTE: THIS IS AN OPTIONAL PARAMETER, SHOULD BE INCLUDED FOR AWS MANAGEMENT/LINKED/STANDARD ACCOUNTS FOR WHICH CUR IS ENABLED!!!!Use lowercase letters, numbers, periods (.), hyphens (-), and underscores (_)'
+    AllowedPattern: '^[a-z0-9\.\-\_]*$'
+    MinLength: 0  #Integers value without quotes
+    MaxLength: 64 #Integers value without quotes
+
+  IAMPermissionInclude:
+    Type: String
+    Description: Permission to include IAM ReadOnly Access
+    Default: Allow
+    AllowedValues:
+      - Allow
+      - Deny
+
+  AssessmentPermissionInclude:
+    Type: String
+    Description: Permission to include Wellarchitected ReadOnly Access
+    Default: Allow
+    AllowedValues:
+      - Allow
+      - Deny
+
+  CompassPermissionInclude:
+    Type: String
+    Description: Permission to include Wellarchitected ReadOnly Access
+    Default: Allow
+    AllowedValues:
+      - Allow
+      - Deny
+
+  EnforceMFA:
+    Description: Flag to enforce MFA (Multi-Factor Authentication) when Assuming the role.
+    Type: String
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+  ExternalIdRI:
+    Type: String
+    Default: "9ba55e7ffef3c1611a511bbbdadbcdbff662b8d9"
+    Description: "External ID for ReservedAI role"
+
+  BucketRegion: # Adding this parameter
+    Type: String
+    Description: The region where the S3 bucket is located.
+    Default: us-east-1
+    AllowedValues:
+      - us-east-1
+      - us-west-1
+      - us-west-2
+      # Add more regions as needed
+
+  GovernanceS3Bucket: # Adding this parameter
+    Type: String
+    Description: The name of the S3 bucket used for governance purposes.
+    MinLength: 3 
+    MaxLength: 63
+    AllowedPattern: '^[a-z0-9\.\-\_]*$'
+    ConstraintDescription: Must be a valid S3 bucket name.
+
+Conditions:
+  IncludeMFACondition: !Equals 
+    - !Ref EnforceMFA
+    - 'true'
+  BucketNotEmpty: !Not 
+    - !Equals 
+      - !Ref AWSCostAndUsageReportCURBucketName
+      - ''
+  CompassAllow: !Not 
+    - !Equals 
+      - !Ref CompassPermissionInclude
+      - Deny
+  IAMAllow: !Not
+    - !Equals
+      - !Ref IAMPermissionInclude
+      - Deny
+    
+
+  AssessmentAllow: !Not
+    - !Equals
+      - !Ref AssessmentPermissionInclude
+      - Deny
+   
+Resources:
+  Role:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: "cloudelligent-assessment-role"
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:  [
+                        "028811834831",
+                        "282762468439"
+                      ]
+            Condition: !If 
+              - IncludeMFACondition
+              - StringEquals:
+                  'sts:ExternalId': "9ba55e7ffef3c1611a511bbbdadbcdbff662b8d9"
+                Bool:
+                  'aws:MultiFactorAuthPresent': 'true'
+              - StringEquals:
+                  'sts:ExternalId': 
+                    - "9ba55e7ffef3c1611a511bbbdadbcdbff662b8d9"
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/ReadOnlyAccess
+      Tags:
+        - Key: Purpose
+          Value: Stack
+  BudgetAndBillingPolicy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: Stack_BudgetAndBillingPolicy
+      PolicyDocument:
+        Statement:
+          - Sid: Auth
+            Action:
+              - 'budgets:ViewBudget'
+              - 'budgets:DescribeBudgetActionHistories'
+              - 'budgets:DescribeBudgetActionsForAccount'
+            Effect: Allow
+            Resource: '*'
+      Roles:
+        - !Ref Role
+  SupportAndRIPolicy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: Stack_SupportAndRIPolicy
+      PolicyDocument:
+        Statement:
+          - Sid: Auth
+            Action:
+              - 'ce:GetReservationPurchaseRecommendation'
+              - 'ce:GetReservationUtilization'
+              - 'ce:DescribeNotificationSubscription'
+              - 'support:DescribeServices'
+              - 'support:DescribeSupportLevel'
+              - 'support:DescribeTrustedAdvisorCheckResult'
+            Effect: Allow
+            Resource: '*'
+      Roles:
+        - !Ref Role
+  AWSCURAccessPolicy:
+    Type: 'AWS::IAM::Policy'
+    Condition: BucketNotEmpty
+    Properties:
+      PolicyName: Stack_AWSCURAccessPolicy
+      PolicyDocument:
+        Statement:
+          - Sid: Auth
+            Action:
+              - 's3:GetObject'
+            Effect: Allow
+            Resource: !Join 
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref AWSCostAndUsageReportCURBucketName
+                - /*
+      Roles:
+        - !Ref Role
+  ComputeOptimizerPolicy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: Stack_ComputeOptimizerPolicy
+      PolicyDocument:
+        Statement:
+          - Sid: Auth
+            Action:
+              - 'compute-optimizer:DescribeRecommendationExportJobs'
+              - 'compute-optimizer:GetAutoScalingGroupRecommendations'
+              - 'compute-optimizer:GetEBSVolumeRecommendations'
+              - 'compute-optimizer:GetEC2InstanceRecommendations'
+              - 'compute-optimizer:GetEC2RecommendationProjectedMetrics'
+              - 'compute-optimizer:GetECSServiceRecommendationProjectedMetrics'
+              - 'compute-optimizer:GetECSServiceRecommendations'
+              - 'compute-optimizer:GetEffectiveRecommendationPreferences'
+              - 'compute-optimizer:GetEnrollmentStatus'
+              - 'compute-optimizer:GetLambdaFunctionRecommendations'
+              - 'compute-optimizer:GetRecommendationPreferences'
+              - 'compute-optimizer:GetRecommendationSummaries'
+            Effect: Allow
+            Resource: '*'
+      Roles:
+        - !Ref Role
+  ThreatManagement:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: CoreStack_ThreatManagementPolicy
+      PolicyDocument:
+        Statement:
+          - Sid: Auth
+            Action:
+              - guardduty:DescribePublishingDestination
+              - guardduty:GetDetector
+              - guardduty:GetFindings
+              - guardduty:ListDetectors
+              - guardduty:ListFindings
+              - guardduty:ListPublishingDestinations
+              - iam:GetRole
+              - kms:Describe*
+              - kms:Get*
+              - kms:List*
+              - s3:GetBucketNotification
+              - s3:GetBucketPolicy
+              - s3:GetBucketTagging
+              - s3:HeadBucket
+              - s3:ListBucket
+              - s3:PutBucketPolicy
+              - s3:PutEncryptionConfiguration
+              - s3:PutBucketNotification
+            Effect: Allow
+            Resource: "*"
+      Roles:
+        - Ref: Role
+
+  VulnerabilityAssessments:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: CoreStack_VulnerabilityAssessmentPolicy
+      PolicyDocument:
+        Statement:
+          - Sid: Auth
+            Action:
+              - inspector:DescribeAssessmentRuns
+              - inspector:DescribeFindings
+              - inspector:DescribeRulesPackages
+              - inspector:ListAssessmentRuns
+              - inspector:ListAssessmentTargets
+              - inspector:ListAssessmentTemplates
+              - inspector:ListFindings
+              - inspector:ListRulesPackages
+            Effect: Allow
+            Resource: "*"
+      Roles:
+        - Ref: Role
+
+  TaggingGovernance:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: CoreStack_TaggingGovernance
+      PolicyDocument:
+        Statement:
+          - Sid: Auth
+            Action:
+              - ec2:CreateTags
+              - ec2:DeleteTags
+              - ec2:DeleteTags
+              - s3:PutObjectTagging
+              - s3:PutBucketTagging
+              - s3:DeleteObjectTagging
+              - tag:TagResources
+            Effect: Allow
+            Resource: "*"
+      Roles:
+        - Ref: Role
+
+  
+  
+
+  AssessmentWritePermission:
+    Type: AWS::IAM::Policy
+    Condition: AssessmentAllow
+    Properties:
+      PolicyName: CoreStack_AssessmentWarPermission
+      PolicyDocument:
+        Statement:
+          - Sid: Auth
+            Action:
+              - wellarchitected:*
+            Effect: Allow
+            Resource: "*"
+      Roles:
+        - Ref: Role
+
+  InventoryReadPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: CoreStack_InventoryReadPolicy
+      PolicyDocument:
+        Statement:
+          - Sid: Auth
+            Action:
+              - access-analyzer:List*
+              - acm:DescribeCertificate
+              - acm:GetCertificate
+              - acm:ListCertificates
+              - acm:ListTagsForCertificate
+              - apigateway:GET
+              - application-autoscaling:DescribeScheduledActions
+              - autoscaling:Describe*
+              - backup:ListBackup*
+              - backup:GetBackup*
+              - batch:Describe*
+              - clouddirectory:DescribeDirectories
+              - clouddirectory:GetDirectory
+              - clouddirectory:ListDirectories
+              - cloudformation:DescribeStacks
+              - cloudformation:Get*
+              - cloudformation:List*
+              - cloudfront:Get*
+              - cloudfront:List*
+              - cloudhsm:Describe*
+              - cloudhsm:List*
+              - cloudwatch:Describe*
+              - cloudwatch:GetDashboard
+              - cloudwatch:ListDashboards
+              - cloudwatch:GetMetricData
+              - codeartifact:DescribeDomain
+              - codepipeline:List
+              - cognito-identity:Describe*
+              - cognito-identity:Get*
+              - cognito-user:List*
+              - cognito-user:Describe*
+              - config:DescribeConfigurationRecorderStatus
+              - datapipeline:DescribePipelines
+              - datapipeline:GetPipelineDefinition
+              - datapipeline:ListPipelines
+              - directconnect:Describe*
+              - dms:Describe*
+              - dynamodb:Describe*
+              - dynamodb:List*
+              - ec2:Describe*
+              - ec2:GetEbsEncryptionByDefault
+              - ecr:Batch*
+              - ecr:Describe*
+              - ecr:Get*
+              - ecr-public:GetRepositoryCatalogData
+              - ecs:Describe*
+              - ecs:List*
+              - eks:Describe*
+              - eks:List*
+              - elasticache:Describe*
+              - elasticbeanstalk:Describe*
+              - elasticfilesystem:Describe*
+              - elasticloadbalancing:Describe*
+              - elasticmapreduce:Describe*
+              - elasticmapreduce:List*
+              - es:Describe*
+              - es:ListDomainNames
+              - glacier:Describe*
+              - glacier:List*
+              - iam:Get*
+              - iam:SimulatePrincipalPolicy
+              - iot:DescribeThing
+              - iot:ListThings
+              - kafka:Describe*
+              - kafka:List*
+              - kinesis:DescribeStream
+              - kinesis:GetShardIterator
+              - kinesis:List*
+              - lambda:Get*
+              - lambda:List*
+              - lightsail:Get*
+              - logs:DescribeLogGroups
+              - logs:DescribeLogStreams
+              - logs:GetLogEvents
+              - mgh:DescribeApplicationState
+              - mgh:ListApplicationStates
+              - mq:DescribeBroker
+              - mq:ListBrokers
+              - opsworks:Describe*
+              - organizations:Describe*
+              - organizations:List*
+              - qldb:DescribeLedger
+              - quicksight:Describe*
+              - quicksight:List*
+              - rds:Describe*
+              - rds:List*
+              - redshift:Describe*
+              - route53:GetTrafficPolicy
+              - route53:GetTrafficPolicyInstance
+              - route53:List*
+              - s3:GetAccountPublicAccessBlock
+              - s3:GetBucketACL
+              - s3:GetBucketLocation
+              - s3:GetBucketPublicAccessBlock
+              - s3:GetLifecycleConfiguration
+              - s3:GetNotificationConfiguration
+              - s3:ListAllMyBuckets
+              - s3:ListBucket
+              - s3:ListObjects
+              - sdb:DomainMetadata
+              - sdb:ListDomains
+              - servicecatalog:Describe*
+              - servicecatalog:List*
+              - secretsmanager:List*
+              - secretsmanager:Describe*
+              - sheild:DescribeProtection
+              - sheild:ListProtections
+              - sns:Get*
+              - sns:ListSubscriptionsByTopic
+              - sns:ListTopics
+              - sqs:GetQueueAttributes
+              - sqs:ListQueues
+              - ssm:Describe*
+              - ssm:Get*
+              - ssm:List*
+              - storagegateway:Describe*
+              - storagegateway:List*
+              - swf:List*
+              - waf:Get*
+              - waf:List*
+              - waf-regional:Get*
+              - waf-regional:List*
+              - wafv2:Get*
+              - wafv2:List*
+              - workmail:Describe*
+              - workmail:List*
+              - workspaces:Describe*
+            Effect: Allow
+            Resource: "*"
+      Roles:
+        - Ref: Role
+
+  ActivityPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: CoreStack_ActivityPolicy
+      PolicyDocument:
+        Statement:
+          - Sid: Auth
+            Action:
+              - cloudtrail:Describe*
+              - cloudtrail:Get*
+              - cloudtrail:List*
+              - iam:Get*
+              - iam:List*
+              - s3:GetBucketLocation
+              - s3:GetBucketTagging
+              - s3:HeadBucket
+              - s3:ListObjects
+              - s3:GetBucketLogging
+              - s3:GetBucketVersioning
+            Effect: Allow
+            Resource: "*"
+      Roles:
+        - Ref: Role
+
+  AlertPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: CoreStack_AlertPolicy
+      PolicyDocument:
+        Statement:
+          - Sid: Auth
+            Action:
+              - cloudwatch:DescribeAlarms
+              - cloudwatch:GetMetricStatistics
+              - cloudwatch:ListMetrics
+            Effect: Allow
+            Resource: "*"
+      Roles:
+        - Ref: Role
+  ReservedAIRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ReservedAI-Write
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: arn:aws:iam::967800896805:user/reserved-write
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref ExternalIdRI
+      Policies:
+        - PolicyName: ReservedAI-Write
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ce:*'
+                  - 'pricing:*'
+                  - 'sts:GetCallerIdentity'
+                  - 'servicequotas:GetServiceQuota'
+                  - 'servicequotas:GetRequestedServiceQuotaChange'
+                  - 'servicequotas:GetAWSDefaultServiceQuota'
+                  - 'servicequotas:ListServices'
+                  - 'servicequotas:ListServiceQuotas'
+                  - 'servicequotas:ListRequestedServiceQuotaChangeHistoryByQuota'
+                  - 'servicequotas:RequestServiceQuotaIncrease'
+                  - 'cloudtrail:LookupEvents'
+                  - 'cur:DescribeReportDefinitions'
+                  - 'ec2:DescribeAccountAttributes'
+                  - 'ec2:DescribeInstances'
+                  - 'ec2:DescribeRegions'
+                  - 'ec2:DescribeAvailabilityZones'
+                  - 'ec2:CreateSpotDatafeedSubscription'
+                  - 'ec2:DescribeSpotDatafeedSubscription'
+                  - 'ec2:DescribeSpotFleetInstances'
+                  - 'ec2:DescribeSpotFleetRequestHistory'
+                  - 'ec2:DescribeSpotFleetRequests'
+                  - 'ec2:DescribeSpotInstanceRequests'
+                  - 'ec2:DescribeSpotPriceHistory'
+                  - 'ec2:DescribeFleetHistory'
+                  - 'ec2:DescribeFleetInstances'
+                  - 'ec2:DescribeFleets'
+                  - 'ec2:DescribeTags'
+                  - 'tag:GetResources'
+                  - 'resource-groups:GetGroupQuery'
+                  - 'resource-groups:SearchResources'
+                  - 'resource-groups:GetGroup'
+                  - 'resource-groups:GetGroupConfiguration'
+                  - 'resource-groups:GetTags'
+                  - 'resource-groups:ListGroupResources'
+                  - 'resource-groups:ListGroups'
+                  - 'ec2:DescribeAddresses'
+                  - 'ec2:DescribeMovingAddresses'
+                  - 'ec2:DescribeVolumes'
+                  - 'ec2:DescribeVolumesModifications'
+                  - 'ec2:DescribeVolumeStatus'
+                  - 'ec2:DescribeElasticGpus'
+                  - 'ec2:DescribeScheduledInstances'
+                  - 'ec2:DescribeScheduledInstanceAvailability'
+                  - 'ec2:DescribeReservedInstances'
+                  - 'ec2:DescribeReservedInstancesModifications'
+                  - 'ec2:DescribeReservedInstancesListings'
+                  - 'ec2:GetReservedInstancesExchangeQuote'
+                  - 'ec2:DescribeReservedInstancesOfferings'
+                  - 'ec2:DescribeCapacityReservations'
+                  - 'ec2:DescribeHosts'
+                  - 'ec2:DescribeHostReservations'
+                  - 'ec2:GetHostReservationPurchasePreview'
+                  - 'ec2:DescribeHostReservationOfferings'
+                  - 'ec2:DescribeCapacityBlockOfferings'
+                  - 'organizations:DescribeOrganization'
+                  - 'organizations:ListAccounts'
+                  - 'organizations:DescribeAccount'
+                  - 'savingsplans:DescribeSavingsPlansOfferingRates'
+                  - 'savingsplans:DescribeSavingsPlansOfferings'
+                  - 'savingsplans:DescribeSavingsPlans'
+                  - 'savingsplans:DescribeSavingsPlanRates'
+                  - 'rds:DescribeReservedDBInstances'
+                  - 'rds:DescribeReservedDBInstancesOfferings'
+                  - 'redshift:DescribeReservedNodeOfferings'
+                  - 'redshift:DescribeReservedNodes'
+                  - 'dynamodb:DescribeReservedCapacity'
+                  - 'dynamodb:DescribeReservedCapacityOfferings'
+                  - 'elasticache:DescribeReservedCacheNodes'
+                  - 'elasticache:DescribeReservedCacheNodesOfferings'
+                  - 'memorydb:DescribeReservedNodes'
+                  - 'memorydb:DescribeReservedNodesOfferings'
+                  - 'es:DescribeReservedElasticsearchInstanceOfferings'
+                  - 'es:DescribeReservedElasticsearchInstances'
+                  - 'ec2:ModifyReservedInstances'
+                  - 'ec2:PurchaseReservedInstancesOffering'
+                  - 'ec2:AcceptReservedInstancesExchangeQuote'
+                  - 'ec2:CreateReservedInstancesListing'
+                  - 'ec2:CancelReservedInstancesListing'
+                  - 'ec2:PurchaseScheduledInstances'
+                  - 'ec2:RunScheduledInstances'
+                  - 'ec2:ModifyCapacityReservation'
+                  - 'ec2:ModifyInstanceCapacityReservationAttributes'
+                  - 'ec2:CreateCapacityReservation'
+                  - 'ec2:CancelCapacityReservation'
+                  - 'ec2:PurchaseHostReservation'
+                  - 'elasticache:PurchaseReservedCacheNodesOffering'
+                  - 'memorydb:PurchaseReservedNodesOffering'
+                  - 'rds:PurchaseReservedDbInstancesOffering'
+                  - 'redshift:PurchaseReservedNodeOffering'
+                  - 'redshift:AcceptReservedNodeExchange'
+                  - 'es:PurchaseReservedElasticsearchInstanceOffering'
+                  - 'savingsplans:CreateSavingsPlan'
+                  - 'savingsplans:DeleteQueuedSavingsPlan'
+
+                Resource:
+                  - '*'
+              - Effect: Allow
+                Action: iam:CreateServiceLinkedRole
+                Resource: 
+                  - arn:aws:iam::*:role/aws-service-role/*
+
+              - Effect: Allow
+                Action:
+                  - iam:GetRolePolicy
+                  - iam:ListRolePolicies
+                  - iam:ListAttachedRolePolicies
+                  - iam:GetPolicy
+                  - iam:GetPolicyVersion
+                  - iam:SimulatePrincipalPolicy
+                Resource:
+                  - arn:aws:iam::*:role/ReservedAI-Write
+              - Effect: Allow
+                Action:
+                  - s3:CreateBucket
+                  - s3:ListBucket
+                  - s3:PutBucketPolicy
+                Resource:
+                  - arn:aws:s3:::reserved-ai-cur-*
+                  - arn:aws:s3:::reserved-ai-spot-*
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - arn:aws:s3:::reserved-ai-cur-*/*
+                  - arn:aws:s3:::reserved-ai-spot-*/*
+              - Effect: Allow
+                Action:
+                  - cur:PutReportDefinition
+                Resource:
+                  - arn:aws:cur:*:*:definition/reserved-ai-*        
+Outputs:
+  RoleARN:
+    Description: ARN of the IAM Role.
+    Value: !GetAtt 
+      - Role
+      - Arn
+  MFAEnabled:
+    Description: Flag to identify MFA enforced for the role or not.
+    Value: !Ref EnforceMFA
+  RoleName:
+    Description: Name of the IAM Role.
+    Value: !Ref Role
+  ExternalId:
+    Description: External id for building trust.
+    Value: "9ba55e7ffef3c1611a511bbbdadbcdbff662b8d9"
