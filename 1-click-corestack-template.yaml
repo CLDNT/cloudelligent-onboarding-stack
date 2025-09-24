@@ -1,0 +1,193 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: CloudFormation template with three inline Lambdas for onboarding.
+
+Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: cloudelligentOnboardingLambdaRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+      Path: "/"
+
+  # --- Lambda 1: Bucket + CUR ---
+  OnboardBucketCurLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: onboardingBucketCurLambda
+      Handler: index.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 180
+      MemorySize: 128
+      Code:
+        ZipFile: |
+          import json, boto3
+          from botocore.exceptions import ClientError
+          import urllib3
+          http = urllib3.PoolManager()
+          def send_response(e,c,s,d=None,r=None):
+              b=json.dumps({"Status":s,"Reason":r or "See logs","PhysicalResourceId":c.log_stream_name,
+                            "StackId":e["StackId"],"RequestId":e["RequestId"],
+                            "LogicalResourceId":e["LogicalResourceId"],"Data":d or {}})
+              http.request("PUT",e["ResponseURL"],body=b,headers={"content-type":"","content-length":str(len(b))})
+          def lambda_handler(event, context):
+              try:
+                  if event["RequestType"]=="Delete":
+                      send_response(event,context,"SUCCESS",{"Message":"Delete acknowledged"}); return
+                  sts=boto3.client("sts")
+                  acc=sts.get_caller_identity()["Account"]
+                  bucket=f"corestack-cur-{acc}"
+                  s3=boto3.client("s3",region_name="us-east-1")
+                  try:
+                      s3.head_bucket(Bucket=bucket)
+                  except ClientError:
+                      s3.create_bucket(Bucket=bucket)
+                  # policy
+                  policy={"Version":"2008-10-17","Statement":[
+                    {"Sid":"AllowCURGetAcl","Effect":"Allow","Principal":{"Service":"billingreports.amazonaws.com"},
+                     "Action":["s3:GetBucketAcl","s3:GetBucketPolicy"],"Resource":f"arn:aws:s3:::{bucket}"},
+                    {"Sid":"AllowCURPutObject","Effect":"Allow","Principal":{"Service":"billingreports.amazonaws.com"},
+                     "Action":"s3:PutObject","Resource":f"arn:aws:s3:::{bucket}/*"}]}
+                  s3.put_bucket_policy(Bucket=bucket,Policy=json.dumps(policy))
+                  # CUR
+                  cur=boto3.client("cur",region_name="us-east-1")
+                  report="CoreStack"
+                  defs=cur.describe_report_definitions().get("ReportDefinitions",[])
+                  if not any(r.get("ReportName")==report for r in defs):
+                      cur.put_report_definition(ReportDefinition={
+                        "ReportName":report,"TimeUnit":"DAILY","Format":"textORcsv","Compression":"GZIP",
+                        "AdditionalSchemaElements":["RESOURCES"],"S3Bucket":bucket,"S3Prefix":"corestack","S3Region":"us-east-1",
+                        "AdditionalArtifacts":[],"RefreshClosedReports":True,"ReportVersioning":"CREATE_NEW_REPORT"})
+                  send_response(event,context,"SUCCESS",{"Bucket":bucket,"Report":report})
+              except Exception as e:
+                  print("Error",e)
+                  send_response(event,context,"FAILED",reason=str(e))
+
+  # --- Lambda 2: Deploy stack ---
+  OnboardStackLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: onboardingStackLambda
+      Handler: index.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 180
+      MemorySize: 128
+      Code:
+        ZipFile: |
+          import json,boto3
+          from botocore.exceptions import ClientError
+          import urllib3
+          http=urllib3.PoolManager()
+          def send_response(e,c,s,d=None,r=None):
+              b=json.dumps({"Status":s,"Reason":r or "See logs","PhysicalResourceId":c.log_stream_name,
+                            "StackId":e["StackId"],"RequestId":e["RequestId"],
+                            "LogicalResourceId":e["LogicalResourceId"],"Data":d or {}})
+              http.request("PUT",e["ResponseURL"],body=b,headers={"content-type":"","content-length":str(len(b))})
+          def lambda_handler(event, context):
+              try:
+                  if event["RequestType"]=="Delete":
+                      send_response(event,context,"SUCCESS",{"Message":"Delete acknowledged"}); return
+                  bucket=event["ResourceProperties"].get("Bucket")
+                  stack="cloudelligent-assessment-role-test"
+                  tmpl="https://cloudelligent-onboarding-template.s3.us-east-1.amazonaws.com/Corestack_FinOps_read_access_test.yml"
+                  cf=boto3.client("cloudformation",region_name="us-east-1")
+                  try:
+                      cf.describe_stacks(StackName=stack)
+                  except ClientError as e:
+                      if "does not exist" in str(e):
+                          cf.create_stack(StackName=stack,TemplateURL=tmpl,
+                                          Parameters=[{"ParameterKey":"AWSCostAndUsageReportCURBucketName","ParameterValue":bucket}],
+                                          Capabilities=["CAPABILITY_NAMED_IAM"])
+                  send_response(event,context,"SUCCESS",{"Stack":stack})
+              except Exception as e:
+                  send_response(event,context,"FAILED",reason=str(e))
+
+  # --- Lambda 3: Orgs & StackSet ---
+  OnboardOrgLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: onboardingOrgLambda
+      Handler: index.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 300
+      MemorySize: 128
+      Code:
+        ZipFile: |
+          import json,time,boto3,urllib3
+          http=urllib3.PoolManager()
+          def send_response(e,c,s,d=None,r=None):
+              b=json.dumps({"Status":s,"Reason":"See logs","PhysicalResourceId":c.log_stream_name,
+                            "StackId":e["StackId"],"RequestId":e["RequestId"],
+                            "LogicalResourceId":e["LogicalResourceId"],"Data":d or {}})
+              http.request("PUT",e["ResponseURL"],body=b,headers={"content-type":"","content-length":str(len(b))})
+          def lambda_handler(event, context):
+              try:
+                  if event["RequestType"]=="Delete":
+                      send_response(event,context,"SUCCESS",{"Message":"Delete acknowledged"}); return
+                  org=boto3.client("organizations")
+                  cf=boto3.client("cloudformation",region_name="us-east-1")
+                  try:
+                      members=org.list_accounts().get("Accounts",[])
+                  except Exception:
+                      # Not a management account
+                      send_response(event,context,"SUCCESS",{"status":"not_management"}); return
+                  if not members:
+                      send_response(event,context,"SUCCESS",{"status":"no_members"}); return
+                  stackset="test-role-stackset"
+                  tmpl="https://cloudelligent-onboarding-template.s3.us-east-1.amazonaws.com/Corestack_FinOps_read_access_test.yml"
+                  bucket=event["ResourceProperties"].get("Bucket")
+                  try:
+                      cf.describe_stack_set(StackSetName=stackset)
+                  except cf.exceptions.StackSetNotFoundException:
+                      cf.create_stack_set(StackSetName=stackset,TemplateURL=tmpl,
+                        Capabilities=["CAPABILITY_NAMED_IAM"],
+                        Parameters=[{"ParameterKey":"AWSCostAndUsageReportCURBucketName","ParameterValue":bucket}],
+                        PermissionModel="SERVICE_MANAGED",AutoDeployment={'Enabled': False})
+                  # wait for ACTIVE
+                  for _ in range(20):
+                      if cf.describe_stack_set(StackSetName=stackset)["StackSet"]["Status"]=="ACTIVE":
+                          break
+                      time.sleep(3)
+                  # deploy to root OU
+                  root=org.list_roots()["Roots"][0]["Id"]
+                  cf.create_stack_instances(StackSetName=stackset,
+                    DeploymentTargets={"OrganizationalUnitIds":[root]},
+                    Regions=["us-east-1"],
+                    OperationPreferences={'FailureToleranceCount':len(members),
+                                          'MaxConcurrentCount':min(10,len(members))})
+                  send_response(event,context,"SUCCESS",{"status":"stackset_deployed"})
+              except Exception as e:
+                  send_response(event,context,"FAILED",reason=str(e))
+
+  # --- Custom resources invoking them in order ---
+  InvokeBucketCur:
+    Type: Custom::OnboardBucketCur
+    Properties:
+      ServiceToken: !GetAtt OnboardBucketCurLambda.Arn
+
+  InvokeStack:
+    Type: Custom::OnboardStack
+    Properties:
+      ServiceToken: !GetAtt OnboardStackLambda.Arn
+      Bucket: !GetAtt InvokeBucketCur.Bucket   # pass bucket name forward
+
+  InvokeOrg:
+    Type: Custom::OnboardOrg
+    Properties:
+      ServiceToken: !GetAtt OnboardOrgLambda.Arn
+      Bucket: !GetAtt InvokeBucketCur.Bucket
+
+Outputs:
+  BucketName:
+    Value: !GetAtt InvokeBucketCur.Bucket
+  OrgStatus:
+    Value: !GetAtt InvokeOrg.status
