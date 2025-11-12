@@ -7,7 +7,7 @@ Resources:
     Properties:
       RoleName: ReservedAI-Write
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -15,131 +15,113 @@ Resources:
             Action: sts:AssumeRole
             Condition:
               StringEquals:
-                sts:ExternalId: 8ab6faee-ffc1-4302-93a3-98daf7178208
+                sts:ExternalId: "8ab6faee-ffc1-4302-93a3-98daf7178208"
       Policies:
         - PolicyName: ReservedAI-Write
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
-                  - ce:*
-                  - pricing:*
-                  - budgets:*
-                  - support:*
-                  - wellarchitected:*
-                  - servicequotas:List*
-                  - servicequotas:Get*
-                  - servicequotas:RequestServiceQuotaIncrease
-                  - servicecatalog:Describe*
-                  - servicecatalog:Get*
-                  - servicecatalog:List*
-                  - billingconductor:Get*
-                  - billingconductor:List*
-                  - compute-optimizer:*
-                  - license-manager:Get*
-                  - license-manager:List*
-                  - trustedadvisor:*
-                  - tag:Get*
-                  - resource-groups:Get*
-                  - resource-groups:SearchResources
-                  - resource-groups:List*
-                  - sts:GetCallerIdentity
-                  - cloudtrail:LookupEvents
-                  - ram:Get*
-                  - ram:List*
-                  - cloudwatch:ListMetrics
-                  - cloudwatch:ListMetricStreams
-                  - cloudwatch:GetMetricStatistics
-                  - cloudwatch:GetMetricData
-                  - cloudwatch:GetMetricStream
-                  - cur:DescribeReportDefinitions
-                  - ec2:CreateSpotDatafeedSubscription
-                  - ec2:GetReservedInstancesExchangeQuote
-                  - ec2:GetHostReservationPurchasePreview
-                  - ec2:Describe*
-                  - rds:Describe*
-                  - rds:List*
-                  - cloudfront:Get*
-                  - cloudfront:List*
-                  - redshift:Describe*
-                  - redshift:GetReservedNodeExchangeOfferings
-                  - dynamodb:List*
-                  - dynamodb:Describe*
-                  - elasticache:List*
-                  - elasticache:Describe*
-                  - memorydb:List*
-                  - memorydb:Describe*
-                  - eks:List*
-                  - eks:Describe*
-                  - es:Describe*
-                  - es:List*
-                  - ecs:List*
-                  - ecs:Describe*
-                  - s3:List*
-                  - s3:GetBucketLocation
-                  - organizations:List*
-                  - organizations:Describe*
-                  - elasticloadbalancing:Describe*
-                  - autoscaling:Describe*
-                  - elasticmapreduce:List*
-                  - elasticmapreduce:Describe*
-                  - sagemaker:List*
-                  - sagemaker:Describe*
-                  - elasticbeanstalk:List*
-                  - elasticbeanstalk:Describe*
-                  - datapipeline:List*
-                  - datapipeline:Describe*
-                  - batch:List*
-                  - batch:Describe*
-                  - apigateway:GET
-                  - lambda:List*
-                  - sqs:List*
-                  - mq:List*
-                  - logs:Describe*
-                  - acm:List*
-                  - glue:Get*
-                  - kinesis:List*
-                  - route53:List*
-                  - swf:List*
-                  - kms:List*
-                  - ec2:ModifyReservedInstances
-                  - ec2:PurchaseReservedInstancesOffering
-                  - ec2:AcceptReservedInstancesExchangeQuote
-                  - ec2:CreateReservedInstancesListing
-                  - ec2:CancelReservedInstancesListing
-                  - ec2:PurchaseScheduledInstances
-                  - ec2:RunScheduledInstances
-                  - ec2:ModifyCapacityReservation
-                  - ec2:ModifyInstanceCapacityReservationAttributes
-                  - ec2:CreateCapacityReservation
-                  - ec2:CancelCapacityReservation
-                  - ec2:PurchaseHostReservation
-                  - ec2:RequestSpotFleet
-                  - ec2:RequestSpotInstances
-                  - ec2:CancelSpotFleetRequests
-                  - ec2:CancelSpotInstanceRequests
-                  - ec2:ModifySpotFleetRequest
-                  - elasticache:PurchaseReservedCacheNodesOffering
-                  - memorydb:PurchaseReservedNodesOffering
-                  - rds:PurchaseReservedDBInstancesOffering
-                  - redshift:PurchaseReservedNodeOffering
-                  - redshift:AcceptReservedNodeExchange
-                  - es:PurchaseReservedElasticsearchInstanceOffering
-                  - savingsplans:Describe*
-                  - savingsplans:List*
-                  - savingsplans:CreateSavingsPlan
-                  - savingsplans:DeleteQueuedSavingsPlan
-                  - savingsplans:*
+                  - 'ce:*'
+                  - 'pricing:*'
+                  - 'sts:GetCallerIdentity'
+                  - 'servicequotas:GetServiceQuota'
+                  - 'servicequotas:GetRequestedServiceQuotaChange'
+                  - 'servicequotas:GetAWSDefaultServiceQuota'
+                  - 'servicequotas:ListServices'
+                  - 'servicequotas:ListServiceQuotas'
+                  - 'servicequotas:ListRequestedServiceQuotaChangeHistoryByQuota'
+                  - 'servicequotas:RequestServiceQuotaIncrease'
+                  - 'cloudtrail:LookupEvents'
+                  - 'cur:DescribeReportDefinitions'
+                  - 'ec2:DescribeAccountAttributes'
+                  - 'ec2:DescribeInstances'
+                  - 'ec2:DescribeRegions'
+                  - 'ec2:DescribeAvailabilityZones'
+                  - 'ec2:CreateSpotDatafeedSubscription'
+                  - 'ec2:DescribeSpotDatafeedSubscription'
+                  - 'ec2:DescribeSpotFleetInstances'
+                  - 'ec2:DescribeSpotFleetRequestHistory'
+                  - 'ec2:DescribeSpotFleetRequests'
+                  - 'ec2:DescribeSpotInstanceRequests'
+                  - 'ec2:DescribeSpotPriceHistory'
+                  - 'ec2:DescribeFleetHistory'
+                  - 'ec2:DescribeFleetInstances'
+                  - 'ec2:DescribeFleets'
+                  - 'ec2:DescribeTags'
+                  - 'tag:GetResources'
+                  - 'resource-groups:GetGroupQuery'
+                  - 'resource-groups:SearchResources'
+                  - 'resource-groups:GetGroup'
+                  - 'resource-groups:GetGroupConfiguration'
+                  - 'resource-groups:GetTags'
+                  - 'resource-groups:ListGroupResources'
+                  - 'resource-groups:ListGroups'
+                  - 'ec2:DescribeAddresses'
+                  - 'ec2:DescribeMovingAddresses'
+                  - 'ec2:DescribeVolumes'
+                  - 'ec2:DescribeVolumesModifications'
+                  - 'ec2:DescribeVolumeStatus'
+                  - 'ec2:DescribeElasticGpus'
+                  - 'ec2:DescribeScheduledInstances'
+                  - 'ec2:DescribeScheduledInstanceAvailability'
+                  - 'ec2:DescribeReservedInstances'
+                  - 'ec2:DescribeReservedInstancesModifications'
+                  - 'ec2:DescribeReservedInstancesListings'
+                  - 'ec2:GetReservedInstancesExchangeQuote'
+                  - 'ec2:DescribeReservedInstancesOfferings'
+                  - 'ec2:DescribeCapacityReservations'
+                  - 'ec2:DescribeHosts'
+                  - 'ec2:DescribeHostReservations'
+                  - 'ec2:GetHostReservationPurchasePreview'
+                  - 'ec2:DescribeHostReservationOfferings'
+                  - 'ec2:DescribeCapacityBlockOfferings'
+                  - 'organizations:DescribeOrganization'
+                  - 'organizations:ListAccounts'
+                  - 'organizations:DescribeAccount'
+                  - 'savingsplans:DescribeSavingsPlansOfferingRates'
+                  - 'savingsplans:DescribeSavingsPlansOfferings'
+                  - 'savingsplans:DescribeSavingsPlans'
+                  - 'savingsplans:DescribeSavingsPlanRates'
+                  - 'rds:DescribeReservedDBInstances'
+                  - 'rds:DescribeReservedDBInstancesOfferings'
+                  - 'redshift:DescribeReservedNodeOfferings'
+                  - 'redshift:DescribeReservedNodes'
+                  - 'dynamodb:DescribeReservedCapacity'
+                  - 'dynamodb:DescribeReservedCapacityOfferings'
+                  - 'elasticache:DescribeReservedCacheNodes'
+                  - 'elasticache:DescribeReservedCacheNodesOfferings'
+                  - 'memorydb:DescribeReservedNodes'
+                  - 'memorydb:DescribeReservedNodesOfferings'
+                  - 'es:DescribeReservedElasticsearchInstanceOfferings'
+                  - 'es:DescribeReservedElasticsearchInstances'
+                  - 'ec2:ModifyReservedInstances'
+                  - 'ec2:PurchaseReservedInstancesOffering'
+                  - 'ec2:AcceptReservedInstancesExchangeQuote'
+                  - 'ec2:CreateReservedInstancesListing'
+                  - 'ec2:CancelReservedInstancesListing'
+                  - 'ec2:PurchaseScheduledInstances'
+                  - 'ec2:RunScheduledInstances'
+                  - 'ec2:ModifyCapacityReservation'
+                  - 'ec2:ModifyInstanceCapacityReservationAttributes'
+                  - 'ec2:CreateCapacityReservation'
+                  - 'ec2:CancelCapacityReservation'
+                  - 'ec2:PurchaseHostReservation'
+                  - 'elasticache:PurchaseReservedCacheNodesOffering'
+                  - 'memorydb:PurchaseReservedNodesOffering'
+                  - 'rds:PurchaseReservedDbInstancesOffering'
+                  - 'redshift:PurchaseReservedNodeOffering'
+                  - 'redshift:AcceptReservedNodeExchange'
+                  - 'es:PurchaseReservedElasticsearchInstanceOffering'
+                  - 'savingsplans:CreateSavingsPlan'
+                  - 'savingsplans:DeleteQueuedSavingsPlan'
                 Resource:
                   - '*'
               - Effect: Allow
-                Action:
-                  - organizations:InviteAccountToOrganization
-                  - organizations:RemoveAccountFromOrganization
-                  - organizations:CreateAccount
-                  - organizations:MoveAccount
-                Resource: '*'
+                Action: iam:CreateServiceLinkedRole
+                Resource: 
+                  - arn:aws:iam::*:role/aws-service-role/*
               - Effect: Allow
                 Action:
                   - iam:GetRolePolicy
@@ -150,27 +132,10 @@ Resources:
                   - iam:SimulatePrincipalPolicy
                 Resource:
                   - arn:aws:iam::*:role/ReservedAI-Write
-                  - arn:aws:iam::*:role/ReservedAI
-                  - arn:aws:iam::*:role/ReservedAI-Read
-                  - arn:aws:iam::*:role/ReservedAI-Write
-                  - arn:aws:iam::*:policy/ReservedAI
-                  - arn:aws:iam::*:policy/ReservedAI-Read
-                  - arn:aws:iam::*:policy/ReservedAI-Write
-              - Effect: Allow
-                Action: iam:CreateServiceLinkedRole
-                Resource: arn:aws:iam::*:role/aws-service-role/*
-                Condition:
-                  StringLike:
-                    iam:AWSServiceName: servicequotas.amazonaws.com
-              - Effect: Allow
-                Action: iam:CreateServiceLinkedRole
-                Resource: arn:aws:iam::*:role/aws-service-role/*
-                Condition:
-                  StringLike:
-                    iam:AWSServiceName: elasticache.amazonaws.com
               - Effect: Allow
                 Action:
                   - s3:CreateBucket
+                  - s3:ListBucket
                   - s3:PutBucketPolicy
                 Resource:
                   - arn:aws:s3:::reserved-ai-cur-*
