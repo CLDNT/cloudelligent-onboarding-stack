@@ -1,0 +1,226 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description":
+    "Used by Archera - https://www.archera.ai This must remain in place for Archera to operate correctly. Email support@archera.ai for help.",
+  "Resources": {
+    "ReservedAIRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "ReservedAI-Write",
+        "AssumeRolePolicyDocument": { 
+  "Version": "2012-10-17", 
+  "Statement": [ 
+    { 
+      "Effect": "Allow", 
+      "Principal": { "AWS": "arn:aws:iam::967800896805:user/reserved-write" },
+      "Action": "sts:AssumeRole", 
+      "Condition": { 
+        "StringEquals": { 
+          "sts:ExternalId": "8ab6faee-ffc1-4302-93a3-98daf7178208" 
+        } 
+      } 
+    } 
+  ] 
+},
+        "Policies": [
+          {
+            "PolicyName": "ReservedAI-Write",
+            "PolicyDocument": {
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ce:*",
+        "pricing:*",
+        "budgets:*",
+        "support:*",
+        "wellarchitected:*",
+        "servicequotas:List*",
+        "servicequotas:Get*",
+        "servicequotas:RequestServiceQuotaIncrease",
+        "servicecatalog:Describe*",
+        "servicecatalog:Get*",
+        "servicecatalog:List*",
+        "billingconductor:Get*",
+        "billingconductor:List*",
+        "compute-optimizer:*",
+        "license-manager:Get*",
+        "license-manager:List*",
+        "trustedadvisor:*",
+        "tag:Get*",
+        "resource-groups:Get*",
+        "resource-groups:SearchResources",
+        "resource-groups:List*",
+        "sts:GetCallerIdentity",
+        "cloudtrail:LookupEvents",
+        "ram:Get*",
+        "ram:List*",
+        "cloudwatch:ListMetrics",
+        "cloudwatch:ListMetricStreams",
+        "cloudwatch:GetMetricStatistics",
+        "cloudwatch:GetMetricData",
+        "cloudwatch:GetMetricStream",
+        "cur:DescribeReportDefinitions",
+        "ec2:CreateSpotDatafeedSubscription",
+        "ec2:GetReservedInstancesExchangeQuote",
+        "ec2:GetHostReservationPurchasePreview",
+        "ec2:Describe*",
+        "rds:Describe*",
+        "rds:List*",
+        "cloudfront:Get*",
+        "cloudfront:List*",
+        "redshift:Describe*",
+        "redshift:GetReservedNodeExchangeOfferings",
+        "dynamodb:List*",
+        "dynamodb:Describe*",
+        "elasticache:List*",
+        "elasticache:Describe*",
+        "memorydb:List*",
+        "memorydb:Describe*",
+        "eks:List*",
+        "eks:Describe*",
+        "es:Describe*",
+        "es:List*",
+        "ecs:List*",
+        "ecs:Describe*",
+        "s3:List*",
+        "s3:GetBucketLocation",
+        "organizations:List*",
+        "organizations:Describe*",
+        "elasticloadbalancing:Describe*",
+        "autoscaling:Describe*",
+        "elasticmapreduce:List*",
+        "elasticmapreduce:Describe*",
+        "sagemaker:List*",
+        "sagemaker:Describe*",
+        "elasticbeanstalk:List*",
+        "elasticbeanstalk:Describe*",
+        "datapipeline:List*",
+        "datapipeline:Describe*",
+        "batch:List*",
+        "batch:Describe*",
+        "apigateway:GET",
+        "lambda:List*",
+        "sqs:List*",
+        "mq:List*",
+        "logs:Describe*",
+        "acm:List*",
+        "glue:Get*",
+        "kinesis:List*",
+        "route53:List*",
+        "swf:List*",
+        "kms:List*",
+        "ec2:ModifyReservedInstances",
+        "ec2:PurchaseReservedInstancesOffering",
+        "ec2:AcceptReservedInstancesExchangeQuote",
+        "ec2:CreateReservedInstancesListing",
+        "ec2:CancelReservedInstancesListing",
+        "ec2:PurchaseScheduledInstances",
+        "ec2:RunScheduledInstances",
+        "ec2:ModifyCapacityReservation",
+        "ec2:ModifyInstanceCapacityReservationAttributes",
+        "ec2:CreateCapacityReservation",
+        "ec2:CancelCapacityReservation",
+        "ec2:PurchaseHostReservation",
+        "ec2:RequestSpotFleet",
+        "ec2:RequestSpotInstances",
+        "ec2:CancelSpotFleetRequests",
+        "ec2:CancelSpotInstanceRequests",
+        "ec2:ModifySpotFleetRequest",
+        "elasticache:PurchaseReservedCacheNodesOffering",
+        "memorydb:PurchaseReservedNodesOffering",
+        "rds:PurchaseReservedDBInstancesOffering",
+        "redshift:PurchaseReservedNodeOffering",
+        "redshift:AcceptReservedNodeExchange",
+        "es:PurchaseReservedElasticsearchInstanceOffering",
+        "savingsplans:Describe*",
+        "savingsplans:List*",
+        "savingsplans:CreateSavingsPlan",
+        "savingsplans:DeleteQueuedSavingsPlan",
+        "savingsplans:*"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "organizations:InviteAccountToOrganization",
+        "organizations:RemoveAccountFromOrganization",
+        "organizations:CreateAccount",
+        "organizations:MoveAccount"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetRolePolicy",
+        "iam:ListRolePolicies",
+        "iam:ListAttachedRolePolicies",
+        "iam:GetPolicy",
+        "iam:GetPolicyVersion",
+        "iam:SimulatePrincipalPolicy"
+      ],
+      "Resource": [
+        "arn:aws:iam::*:role/ReservedAI-Write",
+        "arn:aws:iam::*:role/ReservedAI",
+        "arn:aws:iam::*:role/ReservedAI-Read",
+        "arn:aws:iam::*:role/ReservedAI-Write",
+        "arn:aws:iam::*:policy/ReservedAI",
+        "arn:aws:iam::*:policy/ReservedAI-Read",
+        "arn:aws:iam::*:policy/ReservedAI-Write"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iam:CreateServiceLinkedRole",
+      "Resource": "arn:aws:iam::*:role/aws-service-role/*",
+      "Condition": {"StringLike": {"iam:AWSServiceName": "servicequotas.amazonaws.com"}}
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iam:CreateServiceLinkedRole",
+      "Resource": "arn:aws:iam::*:role/aws-service-role/*",
+      "Condition": {"StringLike": {"iam:AWSServiceName": "elasticache.amazonaws.com"}}
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket",
+        "s3:PutBucketPolicy"
+      ],
+      "Resource": [
+        "arn:aws:s3:::reserved-ai-cur-*",
+        "arn:aws:s3:::reserved-ai-spot-*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::reserved-ai-cur-*/*",
+        "arn:aws:s3:::reserved-ai-spot-*/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cur:PutReportDefinition"
+      ],
+      "Resource": [
+        "arn:aws:cur:*:*:definition/reserved-ai-*"
+      ]
+    }
+  ]
+}
+          }
+        ]
+      }
+    }
+  }
+}
