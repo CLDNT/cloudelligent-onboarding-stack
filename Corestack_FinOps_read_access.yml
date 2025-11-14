@@ -615,6 +615,13 @@ Resources:
                 Resource:
                   - '*'
               - Effect: Allow
+                Action:
+                  - 'organizations:InviteAccountToOrganization'
+                  - 'organizations:RemoveAccountFromOrganization'
+                  - 'organizations:CreateAccount'
+                  - 'organizations:MoveAccount'
+                Resource: '*'                   
+              - Effect: Allow
                 Action: iam:CreateServiceLinkedRole
                 Resource: 
                   - arn:aws:iam::*:role/aws-service-role/*
