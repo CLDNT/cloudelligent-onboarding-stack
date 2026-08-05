@@ -1,0 +1,86 @@
+diff --git a/Cloudelligent_WAFR_Onboarding_Final.yaml b/Cloudelligent_MCS_Onboarding_Write.yml
+index 38712e6..f3eab8b 100644
+--- a/Cloudelligent_WAFR_Onboarding_Final.yaml
++++ b/Cloudelligent_MCS_Onboarding_Write.yml
+@@ -248,14 +248,7 @@ Resources:
+                   - 'purchase-orders:ListPurchaseOrderInvoices'
+                   - 'purchase-orders:ListPurchaseOrders'
+                   - 'purchase-orders:ListTagsForResource'
+-                  - 'support:DescribeTrustedAdvisorChecks'
+-                  - 'support:DescribeTrustedAdvisorCheckResult'
+-                  - 'support:DescribeTrustedAdvisorCheckSummaries'
+-                  - 'support:DescribeCases'
+-                  - 'support:DescribeCommunications'
+-                  - 'support:DescribeServices'
+-                  - 'support:DescribeSeverityLevels'
+-                  - 'support:DescribeIssueTypes'
++                  - 'support:*'
+                 Resource: '*'
+ 
+ 
+@@ -283,9 +276,7 @@ Resources:
+             Statement:
+               - Effect: Allow
+                 Action:
+-                  - 'ce:Get*'
+-                  - 'ce:Describe*'
+-                  - 'ce:List*'
++                  - 'ce:*'
+                   - 'pricing:*'
+                   - 'sts:GetCallerIdentity'
+                   - 'servicequotas:GetServiceQuota'
+@@ -294,12 +285,14 @@ Resources:
+                   - 'servicequotas:ListServices'
+                   - 'servicequotas:ListServiceQuotas'
+                   - 'servicequotas:ListRequestedServiceQuotaChangeHistoryByQuota'
++                  - 'servicequotas:RequestServiceQuotaIncrease'
+                   - 'cloudtrail:LookupEvents'
+                   - 'cur:DescribeReportDefinitions'
+                   - 'ec2:DescribeAccountAttributes'
+                   - 'ec2:DescribeInstances'
+                   - 'ec2:DescribeRegions'
+                   - 'ec2:DescribeAvailabilityZones'
++                  - 'ec2:CreateSpotDatafeedSubscription'
+                   - 'ec2:DescribeSpotDatafeedSubscription'
+                   - 'ec2:DescribeSpotFleetInstances'
+                   - 'ec2:DescribeSpotFleetRequestHistory'
+@@ -356,8 +349,39 @@ Resources:
+                   - 'memorydb:DescribeReservedNodesOfferings'
+                   - 'es:DescribeReservedElasticsearchInstanceOfferings'
+                   - 'es:DescribeReservedElasticsearchInstances'
++                  - 'ec2:ModifyReservedInstances'
++                  - 'ec2:PurchaseReservedInstancesOffering'
++                  - 'ec2:AcceptReservedInstancesExchangeQuote'
++                  - 'ec2:CreateReservedInstancesListing'
++                  - 'ec2:CancelReservedInstancesListing'
++                  - 'ec2:PurchaseScheduledInstances'
++                  - 'ec2:RunScheduledInstances'
++                  - 'ec2:ModifyCapacityReservation'
++                  - 'ec2:ModifyInstanceCapacityReservationAttributes'
++                  - 'ec2:CreateCapacityReservation'
++                  - 'ec2:CancelCapacityReservation'
++                  - 'ec2:PurchaseHostReservation'
++                  - 'elasticache:PurchaseReservedCacheNodesOffering'
++                  - 'memorydb:PurchaseReservedNodesOffering'
++                  - 'rds:PurchaseReservedDbInstancesOffering'
++                  - 'redshift:PurchaseReservedNodeOffering'
++                  - 'redshift:AcceptReservedNodeExchange'
++                  - 'es:PurchaseReservedElasticsearchInstanceOffering'
++                  - 'savingsplans:CreateSavingsPlan'
++                  - 'savingsplans:DeleteQueuedSavingsPlan'
+                 Resource:
+                   - '*'
++              - Effect: Allow
++                Action:
++                  - 'organizations:InviteAccountToOrganization'
++                  - 'organizations:RemoveAccountFromOrganization'
++                  - 'organizations:CreateAccount'
++                  - 'organizations:MoveAccount'
++                Resource: '*'
++              - Effect: Allow
++                Action: iam:CreateServiceLinkedRole
++                Resource:
++                  - arn:aws:iam::*:role/aws-service-role/*
+               - Effect: Allow
+                 Action:
+                   - iam:GetRolePolicy

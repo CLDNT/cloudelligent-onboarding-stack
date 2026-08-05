@@ -1,0 +1,518 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Cloudelligent WAFR Onboarding stack. Combines ProductX WAFR cross-account
+  read-only role with Cloudelligent assessment role (for Cloudviz), Billing read-only role,
+  and ReservedAI role (for Archera). Set EnableOrganizations=yes to deploy all roles
+  to member accounts via a service-managed StackSet.
+
+Parameters:
+  TrustedAccountId:
+    Type: String
+    Default: '820440428496'
+    Description: ProductX platform AWS account ID permitted to assume this role.
+  ExternalId:
+    Type: String
+    NoEcho: true
+    Description: Per-account External ID issued by ProductX (confused-deputy protection). Do not change.
+  EnableOrganizations:
+    Type: String
+    Default: 'no'
+    AllowedValues: ['yes', 'no']
+    Description: >-
+      Set to 'yes' if this account is an AWS Organizations management account
+      and you want ProductX to scan member accounts too. Requires CloudFormation
+      StackSets trusted access to be activated in AWS Organizations first.
+      Leave 'no' for single-account onboarding.
+  ExistingCURBucket:
+    Type: String
+    Default: ''
+    AllowedPattern: '^$|^[a-z0-9.\-]{3,63}$'
+    ConstraintDescription: >-
+      Single S3 bucket name (DNS-compliant, 3-63 chars).
+    Description: >-
+      OPTIONAL. Name of an existing S3 bucket that holds a CUR you want
+      ProductX to read (bring-your-own-CUR). Leave empty for the standard
+      onboarding — ProductX only needs access to the bucket it provisions
+      ('productx-cur-${AWS::AccountId}'). When set, this single bucket is
+      added to the ProductXWAFRRole's S3 read policy with a narrow Resource
+      ARN and ensures that the Platform cannot read from any other bucket.
+
+Conditions:
+  IsOrg: !Equals [!Ref EnableOrganizations, 'yes']
+  HasExistingCURBucket: !Not [!Equals [!Ref ExistingCURBucket, '']]
+
+Resources:
+  # =============================================================
+  # ProductX WAFR Role
+  # =============================================================
+  ProductXWAFRRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ProductXWAFRRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${TrustedAccountId}:root'
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref ExternalId
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/SecurityAudit
+        - arn:aws:iam::aws:policy/ReadOnlyAccess
+      Policies:
+        - PolicyName: ComplianceSignalAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - config:DescribeComplianceByConfigRule
+                  - config:GetComplianceDetailsByConfigRule
+                  - config:DescribeConfigRules
+                  - config:ListDiscoveredResources
+                  - securityhub:GetFindings
+                  - securityhub:DescribeHub
+                  - access-analyzer:ListAnalyzers
+                  - access-analyzer:ListFindings
+                Resource: '*'
+
+
+  # =============================================================
+  # Allow Assume Member Account Roles (org mode only)
+  # =============================================================
+  AllowAssumeMemberRoles:
+    Type: AWS::IAM::Policy
+    Condition: IsOrg
+    Properties:
+      PolicyName: ProductXWAFRAssumeMemberRoles
+      Roles:
+        - !Ref ProductXWAFRRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Resource: 'arn:aws:iam::*:role/ProductXWAFRMemberRole'
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref ExternalId
+
+  # =============================================================
+  # CUR Management Policy (ProductX)
+  # =============================================================
+  ManageCURPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: ProductXManageCUR
+      Roles:
+        - !Ref ProductXWAFRRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - cur:DescribeReportDefinitions
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - cur:PutReportDefinition
+              - cur:ModifyReportDefinition
+              - cur:DeleteReportDefinition
+            Resource: 'arn:aws:cur:*:*:definition/productx-*'
+          - Effect: Allow
+            Action:
+              - s3:CreateBucket
+              - s3:HeadBucket
+              - s3:GetBucketLocation
+              - s3:GetBucketPolicy
+              - s3:PutBucketPolicy
+            Resource: 'arn:aws:s3:::productx-cur-*'
+          - Effect: Allow
+            Action:
+              - s3:ListAllMyBuckets
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:ListBucket
+              - s3:GetBucketLocation
+            Resource:
+              - !Sub 'arn:aws:s3:::productx-cur-${AWS::AccountId}'
+              - !Sub 'arn:aws:s3:::productx-cur-${AWS::AccountId}/*'
+
+
+  # =============================================================
+  # Existing CUR Bucket Policy (bring-your-own-CUR)
+  # =============================================================
+  ExistingCURBucketPolicy:
+    Type: AWS::IAM::Policy
+    Condition: HasExistingCURBucket
+    Properties:
+      PolicyName: ProductXReadExistingCURBucket
+      Roles:
+        - !Ref ProductXWAFRRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:ListBucket
+              - s3:GetBucketLocation
+            Resource:
+              - !Sub 'arn:aws:s3:::${ExistingCURBucket}'
+              - !Sub 'arn:aws:s3:::${ExistingCURBucket}/*'
+
+
+  # =============================================================
+  # Cloudviz Architecture Diagram Role
+  # =============================================================
+  CloudvizArchitectureDiagramRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "cloudelligent-assessment-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: "282762468439"
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId: "9ba55e7ffef3c1611a511bbbdadbcdbff662b8d9"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/ReadOnlyAccess
+
+
+  # =============================================================
+  # Billing ReadOnly Role
+  # =============================================================
+  BillingReadOnlyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: BillingReadOnlyRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: 'arn:aws:iam::898668804275:user/billingviewer'
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: BillingAccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'aws-portal:ViewUsage'
+                  - 'account:GetAccountInformation'
+                  - 'aws-portal:ViewBilling'
+                  - 'billing:GetBillingData'
+                  - 'billing:GetBillingDetails'
+                  - 'billing:GetBillingNotifications'
+                  - 'billing:GetBillingPreferences'
+                  - 'billing:GetCredits'
+                  - 'billing:GetContractInformation'
+                  - 'billing:GetIAMAccessPreference'
+                  - 'billing:GetSellerOfRecord'
+                  - 'billing:ListBillingViews'
+                  - 'budgets:ViewBudget'
+                  - 'budgets:DescribeBudgetActionsForBudget'
+                  - 'budgets:DescribeBudgetAction'
+                  - 'budgets:DescribeBudgetActionsForAccount'
+                  - 'budgets:DescribeBudgetActionHistories'
+                  - 'ce:DescribeCostCategoryDefinition'
+                  - 'ce:GetCostAndUsage'
+                  - 'ce:ListCostCategoryDefinitions'
+                  - 'ce:ListTagsForResource'
+                  - 'ce:ListCostAllocationTags'
+                  - 'consolidatedbilling:ListLinkedAccounts'
+                  - 'consolidatedbilling:GetAccountBillingRole'
+                  - 'cur:GetClassicReport'
+                  - 'cur:GetClassicReportPreferences'
+                  - 'cur:GetUsageReport'
+                  - 'cur:DescribeReportDefinitions'
+                  - 'invoicing:GetInvoiceEmailDeliveryPreferences'
+                  - 'invoicing:GetInvoicePDF'
+                  - 'invoicing:ListInvoiceSummaries'
+                  - 'payments:GetPaymentInstrument'
+                  - 'payments:GetPaymentStatus'
+                  - 'payments:ListPaymentPreferences'
+                  - 'purchase-orders:GetPurchaseOrder'
+                  - 'purchase-orders:ViewPurchaseOrders'
+                  - 'purchase-orders:ListPurchaseOrderInvoices'
+                  - 'purchase-orders:ListPurchaseOrders'
+                  - 'purchase-orders:ListTagsForResource'
+                  - 'support:*'
+                Resource: '*'
+
+
+  # =============================================================
+  # ReservedAI Role (Archera)
+  # =============================================================
+  ReservedAIRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ReservedAI-Write
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: arn:aws:iam::967800896805:user/reserved-write
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId: "8ab6faee-ffc1-4302-93a3-98daf7178208"
+      Policies:
+        - PolicyName: ReservedAI-Write
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ce:*'
+                  - 'pricing:*'
+                  - 'sts:GetCallerIdentity'
+                  - 'servicequotas:GetServiceQuota'
+                  - 'servicequotas:GetRequestedServiceQuotaChange'
+                  - 'servicequotas:GetAWSDefaultServiceQuota'
+                  - 'servicequotas:ListServices'
+                  - 'servicequotas:ListServiceQuotas'
+                  - 'servicequotas:ListRequestedServiceQuotaChangeHistoryByQuota'
+                  - 'servicequotas:RequestServiceQuotaIncrease'
+                  - 'cloudtrail:LookupEvents'
+                  - 'cur:DescribeReportDefinitions'
+                  - 'ec2:DescribeAccountAttributes'
+                  - 'ec2:DescribeInstances'
+                  - 'ec2:DescribeRegions'
+                  - 'ec2:DescribeAvailabilityZones'
+                  - 'ec2:CreateSpotDatafeedSubscription'
+                  - 'ec2:DescribeSpotDatafeedSubscription'
+                  - 'ec2:DescribeSpotFleetInstances'
+                  - 'ec2:DescribeSpotFleetRequestHistory'
+                  - 'ec2:DescribeSpotFleetRequests'
+                  - 'ec2:DescribeSpotInstanceRequests'
+                  - 'ec2:DescribeSpotPriceHistory'
+                  - 'ec2:DescribeFleetHistory'
+                  - 'ec2:DescribeFleetInstances'
+                  - 'ec2:DescribeFleets'
+                  - 'ec2:DescribeTags'
+                  - 'tag:GetResources'
+                  - 'resource-groups:GetGroupQuery'
+                  - 'resource-groups:SearchResources'
+                  - 'resource-groups:GetGroup'
+                  - 'resource-groups:GetGroupConfiguration'
+                  - 'resource-groups:GetTags'
+                  - 'resource-groups:ListGroupResources'
+                  - 'resource-groups:ListGroups'
+                  - 'ec2:DescribeAddresses'
+                  - 'ec2:DescribeMovingAddresses'
+                  - 'ec2:DescribeVolumes'
+                  - 'ec2:DescribeVolumesModifications'
+                  - 'ec2:DescribeVolumeStatus'
+                  - 'ec2:DescribeElasticGpus'
+                  - 'ec2:DescribeScheduledInstances'
+                  - 'ec2:DescribeScheduledInstanceAvailability'
+                  - 'ec2:DescribeReservedInstances'
+                  - 'ec2:DescribeReservedInstancesModifications'
+                  - 'ec2:DescribeReservedInstancesListings'
+                  - 'ec2:GetReservedInstancesExchangeQuote'
+                  - 'ec2:DescribeReservedInstancesOfferings'
+                  - 'ec2:DescribeCapacityReservations'
+                  - 'ec2:DescribeHosts'
+                  - 'ec2:DescribeHostReservations'
+                  - 'ec2:GetHostReservationPurchasePreview'
+                  - 'ec2:DescribeHostReservationOfferings'
+                  - 'ec2:DescribeCapacityBlockOfferings'
+                  - 'organizations:DescribeOrganization'
+                  - 'organizations:ListAccounts'
+                  - 'organizations:DescribeAccount'
+                  - 'savingsplans:DescribeSavingsPlansOfferingRates'
+                  - 'savingsplans:DescribeSavingsPlansOfferings'
+                  - 'savingsplans:DescribeSavingsPlans'
+                  - 'savingsplans:DescribeSavingsPlanRates'
+                  - 'rds:DescribeReservedDBInstances'
+                  - 'rds:DescribeReservedDBInstancesOfferings'
+                  - 'redshift:DescribeReservedNodeOfferings'
+                  - 'redshift:DescribeReservedNodes'
+                  - 'dynamodb:DescribeReservedCapacity'
+                  - 'dynamodb:DescribeReservedCapacityOfferings'
+                  - 'elasticache:DescribeReservedCacheNodes'
+                  - 'elasticache:DescribeReservedCacheNodesOfferings'
+                  - 'memorydb:DescribeReservedNodes'
+                  - 'memorydb:DescribeReservedNodesOfferings'
+                  - 'es:DescribeReservedElasticsearchInstanceOfferings'
+                  - 'es:DescribeReservedElasticsearchInstances'
+                  - 'ec2:ModifyReservedInstances'
+                  - 'ec2:PurchaseReservedInstancesOffering'
+                  - 'ec2:AcceptReservedInstancesExchangeQuote'
+                  - 'ec2:CreateReservedInstancesListing'
+                  - 'ec2:CancelReservedInstancesListing'
+                  - 'ec2:PurchaseScheduledInstances'
+                  - 'ec2:RunScheduledInstances'
+                  - 'ec2:ModifyCapacityReservation'
+                  - 'ec2:ModifyInstanceCapacityReservationAttributes'
+                  - 'ec2:CreateCapacityReservation'
+                  - 'ec2:CancelCapacityReservation'
+                  - 'ec2:PurchaseHostReservation'
+                  - 'elasticache:PurchaseReservedCacheNodesOffering'
+                  - 'memorydb:PurchaseReservedNodesOffering'
+                  - 'rds:PurchaseReservedDbInstancesOffering'
+                  - 'redshift:PurchaseReservedNodeOffering'
+                  - 'redshift:AcceptReservedNodeExchange'
+                  - 'es:PurchaseReservedElasticsearchInstanceOffering'
+                  - 'savingsplans:CreateSavingsPlan'
+                  - 'savingsplans:DeleteQueuedSavingsPlan'
+                Resource:
+                  - '*'
+              - Effect: Allow
+                Action:
+                  - 'organizations:InviteAccountToOrganization'
+                  - 'organizations:RemoveAccountFromOrganization'
+                  - 'organizations:CreateAccount'
+                  - 'organizations:MoveAccount'
+                Resource: '*'                   
+              - Effect: Allow
+                Action: iam:CreateServiceLinkedRole
+                Resource: 
+                  - arn:aws:iam::*:role/aws-service-role/*
+              - Effect: Allow
+                Action:
+                  - iam:GetRolePolicy
+                  - iam:ListRolePolicies
+                  - iam:ListAttachedRolePolicies
+                  - iam:GetPolicy
+                  - iam:GetPolicyVersion
+                  - iam:SimulatePrincipalPolicy
+                Resource:
+                  - arn:aws:iam::*:role/ReservedAI-Write
+              - Effect: Allow
+                Action:
+                  - s3:CreateBucket
+                  - s3:ListBucket
+                  - s3:PutBucketPolicy
+                Resource:
+                  - arn:aws:s3:::reserved-ai-cur-*
+                  - arn:aws:s3:::reserved-ai-spot-*
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - arn:aws:s3:::reserved-ai-cur-*/*
+                  - arn:aws:s3:::reserved-ai-spot-*/*
+              - Effect: Allow
+                Action:
+                  - cur:PutReportDefinition
+                Resource:
+                  - arn:aws:cur:*:*:definition/reserved-ai-*
+
+
+  # =============================================================
+  # StackSet — deploys all member roles across the org
+  # =============================================================
+  CloudelligentOnboardingMemberStackSet:
+    Type: AWS::CloudFormation::StackSet
+    Condition: IsOrg
+    Properties:
+      StackSetName: CloudelligentOnboardingMemberStackSet
+      Description: Deploys ProductX WAFR, Cloudviz, Billing, and Archera roles to organization member accounts.
+      PermissionModel: SERVICE_MANAGED
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      Capabilities:
+        - CAPABILITY_NAMED_IAM
+      ManagedExecution:
+        Active: true
+      OperationPreferences:
+        MaxConcurrentCount: 10
+        FailureToleranceCount: 5
+        RegionConcurrencyType: PARALLEL
+      Parameters:
+        - ParameterKey: ManagementAccountId
+          ParameterValue: !Ref 'AWS::AccountId'
+        - ParameterKey: ExternalId
+          ParameterValue: !Ref ExternalId
+      TemplateBody: |
+        AWSTemplateFormatVersion: '2010-09-09'
+        Description: Cloudelligent onboarding roles for member accounts (StackSet-deployed).
+
+        Parameters:
+          ManagementAccountId:
+            Type: String
+          ExternalId:
+            Type: String
+            NoEcho: true
+
+        Resources:
+          ProductXWAFRMemberRole:
+            Type: AWS::IAM::Role
+            Properties:
+              RoleName: ProductXWAFRMemberRole
+              AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                  - Effect: Allow
+                    Principal:
+                      AWS: !Sub 'arn:aws:iam::${ManagementAccountId}:role/ProductXWAFRRole'
+                    Action: sts:AssumeRole
+                    Condition:
+                      StringEquals:
+                        sts:ExternalId: !Ref ExternalId
+              ManagedPolicyArns:
+                - arn:aws:iam::aws:policy/SecurityAudit
+                - arn:aws:iam::aws:policy/ReadOnlyAccess
+              Policies:
+                - PolicyName: ComplianceSignalAccess
+                  PolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                      - Effect: Allow
+                        Action:
+                          - config:DescribeComplianceByConfigRule
+                          - config:GetComplianceDetailsByConfigRule
+                          - config:DescribeConfigRules
+                          - config:ListDiscoveredResources
+                          - securityhub:GetFindings
+                          - securityhub:DescribeHub
+                          - access-analyzer:ListAnalyzers
+                          - access-analyzer:ListFindings
+                        Resource: '*'
+
+          CloudvizMemberRole:
+            Type: AWS::IAM::Role
+            Properties:
+              RoleName: cloudelligent-assessment-role
+              AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                  - Effect: Allow
+                    Principal:
+                      AWS: '282762468439'
+                    Action: sts:AssumeRole
+                    Condition:
+                      StringEquals:
+                        sts:ExternalId: '9ba55e7ffef3c1611a511bbbdadbcdbff662b8d9'
+              ManagedPolicyArns:
+                - arn:aws:iam::aws:policy/ReadOnlyAccess
+
+        Outputs:
+          WAFRMemberRoleArn:
+            Value: !GetAtt ProductXWAFRMemberRole.Arn
+          CloudvizMemberRoleArn:
+            Value: !GetAtt CloudvizMemberRole.Arn
+
+
+Outputs:
+  WAFRRoleArn:
+    Description: ARN of the ProductX WAFR IAM Role.
+    Value: !GetAtt ProductXWAFRRole.Arn
+  CloudvizRoleARN:
+    Description: ARN of the Cloudviz Architecture Diagram IAM Role.
+    Value: !GetAtt CloudvizArchitectureDiagramRole.Arn
