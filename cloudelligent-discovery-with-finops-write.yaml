@@ -767,3 +767,9 @@ Resources:
 Outputs:
   RoleArn:
     Value: !GetAtt CloudelligentDiscoveryRole.Arn
+  AccessRoleType:
+    Value: finops
+  AccessRoleName:
+    Value: !Ref CloudelligentDiscoveryRole
+  TemplateVersion:
+    Value: "2026-10-23"
