@@ -114,21 +114,176 @@ Resources:
               - Sid: DenyCustomerDataReads
                 Effect: Deny
                 Action:
-                  - s3-object-lambda:GetObject
                   - dynamodb:Query
                   - dynamodb:Scan
                   - dynamodb:PartiQLSelect
-                  - dax:GetItem
-                  - dax:BatchGetItem
+                  - dynamodb:GetRecords
+                  - dynamodb:ReadDataForReplication
+                  - dynamodb:SearchVectors
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:GetParametersByPath
+                  - ssm:GetParameterHistory
                   - dax:Query
                   - dax:Scan
-                  - es:ESHttpGet
-                  - es:ESHttpHead
                   - cassandra:Select
                   - qldb:GetBlock
                   - qldb:GetRevision
-                  - qldb:GetDigest
+                  - sdb:Select
+                  - es:ESHttpGet
+                  - healthlake:ReadResource
+                  - healthlake:SearchWith*
+                  - s3tables:GetTableData
+                  - s3vectors:GetVectors
+                  - dynamodb:*GetItem
+                  - dax:*GetItem
+                  - athena:GetQueryResults*
+                  - glue:GetStatement
+                  - rds:Download*
+                  - quicksight:DescribeDashboardSnapshotJobResult
+                  - logs:GetLogEvents
+                  - logs:FilterLogEvents
+                  - logs:GetLogRecord
+                  - logs:GetQueryResults
+                  - logs:StartLiveTail
+                  - logs:GetLookupTable
+                  - cloudwatch:GetRecords
+                  - cloudwatch:GetTelemetryQueryResults
+                  - cloudwatch:GenerateQueryResultsSummary
+                  - rum:GetAppMonitorData
+                  - ssm:GetCommandInvocation
+                  - elasticbeanstalk:RetrieveEnvironmentInfo
+                  - wafv2:GetSampledRequests
+                  - waf:GetSampledRequests
+                  - waf-regional:GetSampledRequests
+                  - logs:ListAnomalies
+                  - ssm:GetAutomationExecution
+                  - xray:*Traces
+                  - amplify:GetJob
+                  - amplify:GetApp
+                  - amplify:GetBranch
+                  - applicationinsights:Describe*Observation*
+                  - logs:DescribeQuer*
+                  - s3express:CreateSession
+                  - mediastore:GetObject
+                  - mediapackagev2:GetObject
+                  - workdocs:GetDocument*
+                  - snowball:GetJobUnlockCode
+                  - iotanalytics:GetDatasetContent
+                  - iotanalytics:SampleChannelData
+                  - ec2:DescribeConversionTasks
+                  - kinesis:GetRecords
+                  - kinesisvideo:GetMedia*
+                  - kinesisvideo:GetClip
+                  - kinesisvideo:GetImages
+                  - kinesisvideo:Get*StreamingSessionURL
+                  - sqs:ReceiveMessage
+                  - iot:GetThingShadow
+                  - iot:GetRetainedMessage
+                  - iotsitewise:GetQueryResults
+                  - iotwireless:Get*Position
+                  - chime:GetChannelMessage
+                  - chime:RetrieveDataExports
+                  - ses:GetArchiveMessage*
+                  - ses:GetArchiveSearchResults
+                  - ses:GetMessageInsights
+                  - ses:GetContact
+                  - sns:GetEndpointAttributes
+                  - sns:ListPhoneNumbersOptedOut
+                  - sms-voice:DescribeOptedOutNumbers
+                  - ses:GetSuppressedDestination
+                  - ses:GetMemberOfAddressList
+                  - iotsitewise:Get*AssetProperty*
+                  - mobiletargeting:Get*Endpoint*
+                  - chime:GetProxySession
+                  - chime:ListProxySessions
+                  - connect:DescribeContact
+                  - connect:DescribeContactEvaluation
+                  - connect:GetContactAttributes
+                  - lex:GetSession
+                  - lex:GetUtterancesView
+                  - ssm-incidents:GetIncidentRecord
+                  - tax:GetTaxRegistrationDocument
+                  - cognito-idp:AdminGetUser
+                  - cognito-idp:AdminGetDevice
+                  - cognito-idp:AdminListDevices
+                  - cognito-idp:AdminListUserAuthEvents
+                  - bedrock:Retrieve
+                  - bedrock:AgenticRetrieveStream
+                  - bedrock:GetDocumentContent
+                  - bedrock:GetAgentMemory
+                  - kendra:Query
+                  - rekognition:Get*Detection
+                  - rekognition:GetCelebrityRecognition
+                  - rekognition:GetContentModeration
+                  - rekognition:GetFaceSearch
+                  - rekognition:GetPersonTracking
+                  - rekognition:Search*
+                  - rekognition:ListFaces
+                  - lookoutmetrics:GetSampleData
+                  - forecast:Query*
+                  - frauddetector:GetEvent
+                  - frauddetector:GetListElements
+                  - swf:GetWorkflowExecutionHistory
+                  - bedrock-agentcore:GetEvent
+                  - bedrock-agentcore:GetMemoryRecord
+                  - bedrock-agentcore:RetrieveMemoryRecords
+                  - translate:Get*
+                  - bedrock:GetAutomatedReasoningPolicyBuildWorkflowResultAssets
+                  - lambda:GetDurableExecution*
+                  - bedrock-mantle:GetFile
+                  - bedrock-mantle:GetInference
+                  - codecommit:GitPull
+                  - codecommit:GetBlob*
+                  - codecommit:GetFile
+                  - codecommit:GetComment
+                  - codecommit:GetComments*
+                  - codeartifact:ReadFromRepository
+                  - ecr:BatchGetImage
+                  - ecr:GetDownloadUrlForLayer
+                  - lambda:GetFunction
+                  - lambda:GetLayerVersion
+                  - cloudfront:Get*Function
+                  - cloudfront-keyvaluestore:ListKeys
+                  - inspector2:BatchGetCodeSnippet
+                  - securityagent:GetArtifact
+                  - securityagent:GetDesignReviewArtifact
+                  - eks:AccessKubernetesApi
+                  - codeartifact:GetPackageVersion*
+                  - codecommit:*DescribeMergeConflicts
+                  - codeartifact:GetAuthorizationToken
+                  - cognito-idp:GetClientToken
+                  - connect:GetFederationToken
+                  - appsync:ListApiKeys
+                  - acm:GetAcmeExternalAccountBindingCredentials
+                  - license-manager:GetAccessToken
                 Resource: '*'
+              - Sid: DenyApiGatewayKeyReads
+                Effect: Deny
+                Action:
+                  - apigateway:GET
+                Resource:
+                  - arn:aws:apigateway:*::/apikeys
+                  - arn:aws:apigateway:*::/apikeys/*
+                  - arn:aws:apigateway:*::/usageplans/*/keys*
+              - Sid: DenyS3ObjectDataReads
+                Effect: Deny
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetObjectVersionForReplication
+                  - s3:GetObject*Annotation*
+                NotResource:
+                  - !Sub arn:aws:s3:::cloudelligentdiscovery-cur-${AWS::AccountId}
+                  - !Sub arn:aws:s3:::cloudelligentdiscovery-cur-${AWS::AccountId}/*
+                  - !If
+                    - HasExistingCURBucket
+                    - !Sub arn:aws:s3:::${ExistingCURBucket}
+                    - !Ref AWS::NoValue
+                  - !If
+                    - HasExistingCURBucket
+                    - !Sub arn:aws:s3:::${ExistingCURBucket}/*
+                    - !Ref AWS::NoValue
         - PolicyName: CurPermissions
           PolicyDocument:
             Version: '2012-10-17'
@@ -451,17 +606,159 @@ Resources:
                           - dynamodb:Query
                           - dynamodb:Scan
                           - dynamodb:PartiQLSelect
-                          - dax:GetItem
-                          - dax:BatchGetItem
+                          - dynamodb:GetRecords
+                          - dynamodb:ReadDataForReplication
+                          - dynamodb:SearchVectors
+                          - ssm:GetParameter
+                          - ssm:GetParameters
+                          - ssm:GetParametersByPath
+                          - ssm:GetParameterHistory
                           - dax:Query
                           - dax:Scan
-                          - es:ESHttpGet
-                          - es:ESHttpHead
                           - cassandra:Select
                           - qldb:GetBlock
                           - qldb:GetRevision
-                          - qldb:GetDigest
+                          - sdb:Select
+                          - es:ESHttpGet
+                          - healthlake:ReadResource
+                          - healthlake:SearchWith*
+                          - s3tables:GetTableData
+                          - s3vectors:GetVectors
+                          - dynamodb:*GetItem
+                          - dax:*GetItem
+                          - athena:GetQueryResults*
+                          - glue:GetStatement
+                          - rds:Download*
+                          - quicksight:DescribeDashboardSnapshotJobResult
+                          - logs:GetLogEvents
+                          - logs:FilterLogEvents
+                          - logs:GetLogRecord
+                          - logs:GetQueryResults
+                          - logs:StartLiveTail
+                          - logs:GetLookupTable
+                          - cloudwatch:GetRecords
+                          - cloudwatch:GetTelemetryQueryResults
+                          - cloudwatch:GenerateQueryResultsSummary
+                          - rum:GetAppMonitorData
+                          - ssm:GetCommandInvocation
+                          - elasticbeanstalk:RetrieveEnvironmentInfo
+                          - wafv2:GetSampledRequests
+                          - waf:GetSampledRequests
+                          - waf-regional:GetSampledRequests
+                          - logs:ListAnomalies
+                          - ssm:GetAutomationExecution
+                          - xray:*Traces
+                          - amplify:GetJob
+                          - amplify:GetApp
+                          - amplify:GetBranch
+                          - applicationinsights:Describe*Observation*
+                          - logs:DescribeQuer*
+                          - s3express:CreateSession
+                          - mediastore:GetObject
+                          - mediapackagev2:GetObject
+                          - workdocs:GetDocument*
+                          - snowball:GetJobUnlockCode
+                          - iotanalytics:GetDatasetContent
+                          - iotanalytics:SampleChannelData
+                          - ec2:DescribeConversionTasks
+                          - kinesis:GetRecords
+                          - kinesisvideo:GetMedia*
+                          - kinesisvideo:GetClip
+                          - kinesisvideo:GetImages
+                          - kinesisvideo:Get*StreamingSessionURL
+                          - sqs:ReceiveMessage
+                          - iot:GetThingShadow
+                          - iot:GetRetainedMessage
+                          - iotsitewise:GetQueryResults
+                          - iotwireless:Get*Position
+                          - chime:GetChannelMessage
+                          - chime:RetrieveDataExports
+                          - ses:GetArchiveMessage*
+                          - ses:GetArchiveSearchResults
+                          - ses:GetMessageInsights
+                          - ses:GetContact
+                          - sns:GetEndpointAttributes
+                          - sns:ListPhoneNumbersOptedOut
+                          - sms-voice:DescribeOptedOutNumbers
+                          - ses:GetSuppressedDestination
+                          - ses:GetMemberOfAddressList
+                          - iotsitewise:Get*AssetProperty*
+                          - mobiletargeting:Get*Endpoint*
+                          - chime:GetProxySession
+                          - chime:ListProxySessions
+                          - connect:DescribeContact
+                          - connect:DescribeContactEvaluation
+                          - connect:GetContactAttributes
+                          - lex:GetSession
+                          - lex:GetUtterancesView
+                          - ssm-incidents:GetIncidentRecord
+                          - tax:GetTaxRegistrationDocument
+                          - cognito-idp:AdminGetUser
+                          - cognito-idp:AdminGetDevice
+                          - cognito-idp:AdminListDevices
+                          - cognito-idp:AdminListUserAuthEvents
+                          - bedrock:Retrieve
+                          - bedrock:AgenticRetrieveStream
+                          - bedrock:GetDocumentContent
+                          - bedrock:GetAgentMemory
+                          - kendra:Query
+                          - rekognition:Get*Detection
+                          - rekognition:GetCelebrityRecognition
+                          - rekognition:GetContentModeration
+                          - rekognition:GetFaceSearch
+                          - rekognition:GetPersonTracking
+                          - rekognition:Search*
+                          - rekognition:ListFaces
+                          - lookoutmetrics:GetSampleData
+                          - forecast:Query*
+                          - frauddetector:GetEvent
+                          - frauddetector:GetListElements
+                          - swf:GetWorkflowExecutionHistory
+                          - bedrock-agentcore:GetEvent
+                          - bedrock-agentcore:GetMemoryRecord
+                          - bedrock-agentcore:RetrieveMemoryRecords
+                          - translate:Get*
+                          - bedrock:GetAutomatedReasoningPolicyBuildWorkflowResultAssets
+                          - lambda:GetDurableExecution*
+                          - bedrock-mantle:GetFile
+                          - bedrock-mantle:GetInference
+                          - codecommit:GitPull
+                          - codecommit:GetBlob*
+                          - codecommit:GetFile
+                          - codecommit:GetComment
+                          - codecommit:GetComments*
+                          - codeartifact:ReadFromRepository
+                          - ecr:BatchGetImage
+                          - ecr:GetDownloadUrlForLayer
+                          - lambda:GetFunction
+                          - lambda:GetLayerVersion
+                          - cloudfront:Get*Function
+                          - cloudfront-keyvaluestore:ListKeys
+                          - inspector2:BatchGetCodeSnippet
+                          - securityagent:GetArtifact
+                          - securityagent:GetDesignReviewArtifact
+                          - eks:AccessKubernetesApi
+                          - codeartifact:GetPackageVersion*
+                          - codecommit:*DescribeMergeConflicts
+                          - codeartifact:GetAuthorizationToken
+                          - cognito-idp:GetClientToken
+                          - connect:GetFederationToken
+                          - appsync:ListApiKeys
+                          - acm:GetAcmeExternalAccountBindingCredentials
+                          - license-manager:GetAccessToken
+                          - s3:GetObject
+                          - s3:GetObjectVersion
+                          - s3:GetObjectVersionForReplication
+                          - s3:GetObject*Annotation*
                         Resource: '*'
+                      - Sid: DenyApiGatewayKeyReads
+                        Effect: Deny
+                        Action:
+                          - apigateway:GET
+                        Resource:
+                          - arn:aws:apigateway:*::/apikeys
+                          - arn:aws:apigateway:*::/apikeys/*
+                          - arn:aws:apigateway:*::/usageplans/*/keys*
 
         Outputs:
           MemberRoleArn:
