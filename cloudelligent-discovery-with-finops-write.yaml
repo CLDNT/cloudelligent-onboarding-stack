@@ -141,6 +141,12 @@ Resources:
                   - glue:GetStatement
                   - rds:Download*
                   - quicksight:DescribeDashboardSnapshotJobResult
+                  - logs:GetLogEvents
+                  - logs:FilterLogEvents
+                  - logs:GetLogRecord
+                  - logs:GetQueryResults
+                  - logs:StartLiveTail
+                  - logs:GetLookupTable
                   - cloudwatch:GetRecords
                   - cloudwatch:GetTelemetryQueryResults
                   - cloudwatch:GenerateQueryResultsSummary
@@ -150,10 +156,14 @@ Resources:
                   - wafv2:GetSampledRequests
                   - waf:GetSampledRequests
                   - waf-regional:GetSampledRequests
+                  - logs:ListAnomalies
                   - ssm:GetAutomationExecution
+                  - xray:*Traces
                   - amplify:GetJob
                   - amplify:GetApp
                   - amplify:GetBranch
+                  - applicationinsights:Describe*Observation*
+                  - logs:DescribeQuer*
                   - s3express:CreateSession
                   - mediastore:GetObject
                   - mediapackagev2:GetObject
@@ -192,6 +202,7 @@ Resources:
                   - connect:GetContactAttributes
                   - lex:GetSession
                   - lex:GetUtterancesView
+                  - ssm-incidents:GetIncidentRecord
                   - tax:GetTaxRegistrationDocument
                   - cognito-idp:AdminGetUser
                   - cognito-idp:AdminGetDevice
@@ -619,6 +630,12 @@ Resources:
                           - glue:GetStatement
                           - rds:Download*
                           - quicksight:DescribeDashboardSnapshotJobResult
+                          - logs:GetLogEvents
+                          - logs:FilterLogEvents
+                          - logs:GetLogRecord
+                          - logs:GetQueryResults
+                          - logs:StartLiveTail
+                          - logs:GetLookupTable
                           - cloudwatch:GetRecords
                           - cloudwatch:GetTelemetryQueryResults
                           - cloudwatch:GenerateQueryResultsSummary
@@ -628,10 +645,14 @@ Resources:
                           - wafv2:GetSampledRequests
                           - waf:GetSampledRequests
                           - waf-regional:GetSampledRequests
+                          - logs:ListAnomalies
                           - ssm:GetAutomationExecution
+                          - xray:*Traces
                           - amplify:GetJob
                           - amplify:GetApp
                           - amplify:GetBranch
+                          - applicationinsights:Describe*Observation*
+                          - logs:DescribeQuer*
                           - s3express:CreateSession
                           - mediastore:GetObject
                           - mediapackagev2:GetObject
@@ -670,6 +691,7 @@ Resources:
                           - connect:GetContactAttributes
                           - lex:GetSession
                           - lex:GetUtterancesView
+                          - ssm-incidents:GetIncidentRecord
                           - tax:GetTaxRegistrationDocument
                           - cognito-idp:AdminGetUser
                           - cognito-idp:AdminGetDevice
